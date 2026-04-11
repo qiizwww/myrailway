@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ApsGo Railway Worker
  * Background service untuk automation scheduling 24/7
  * Features:
@@ -73,12 +73,12 @@ const config = {
   },
 };
 
-console.log('🚀 Starting ApsGo Railway Worker...');
-console.log(`📡 Firebase Project: ${config.firebase.projectId}`);
-console.log(`🔥 Firebase DB URL: ${config.firebase.databaseURL}`);
-console.log(`📦 Redis: ${config.redis.host}:${config.redis.port}`);
-console.log(`⏰ Timezone: ${process.env.TZ} (Current: ${new Date().toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'})})`);
-console.log(`📍 Kontrol Path: /${FIREBASE_PATHS.kontrol}`);
+console.log('≡ƒÜÇ Starting ApsGo Railway Worker...');
+console.log(`≡ƒôí Firebase Project: ${config.firebase.projectId}`);
+console.log(`≡ƒöÑ Firebase DB URL: ${config.firebase.databaseURL}`);
+console.log(`≡ƒôª Redis: ${config.redis.host}:${config.redis.port}`);
+console.log(`ΓÅ░ Timezone: ${process.env.TZ} (Current: ${new Date().toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'})})`);
+console.log(`≡ƒôì Kontrol Path: /${FIREBASE_PATHS.kontrol}`);
 
 // ==================== ENVIRONMENT VALIDATION ====================
 
@@ -91,9 +91,9 @@ const requiredEnvs = [
 
 const missingEnvs = requiredEnvs.filter(env => !process.env[env]);
 if (missingEnvs.length > 0) {
-  console.error('❌ Missing required environment variables:');
+  console.error('Γ¥î Missing required environment variables:');
   missingEnvs.forEach(env => console.error(`   - ${env}`));
-  console.error('\n📋 To fix this:');
+  console.error('\n≡ƒôï To fix this:');
   console.error('1. Go to Railway Dashboard');
   console.error('2. Select your worker service');
   console.error('3. Go to Variables tab');
@@ -102,7 +102,7 @@ if (missingEnvs.length > 0) {
   process.exit(1);
 }
 
-console.log('✅ All required environment variables are set');
+console.log('Γ£à All required environment variables are set');
 
 // ==================== FIREBASE INITIALIZATION ====================
 
@@ -115,9 +115,9 @@ try {
     }),
     databaseURL: config.firebase.databaseURL,
   });
-  console.log('✅ Firebase Admin initialized');
+  console.log('Γ£à Firebase Admin initialized');
 } catch (error) {
-  console.error('❌ Firebase initialization failed:', error.message);
+  console.error('Γ¥î Firebase initialization failed:', error.message);
   process.exit(1);
 }
 
@@ -127,13 +127,13 @@ async function sendAutomationNotification({ title, body, type, data = {} }) {
   try {
     // Check if messaging is available
     if (!admin.messaging) {
-      console.log(`📝 [INFO] Cloud Messaging not available. App will use local notifications via Firebase listener.`);
+      console.log(`≡ƒô¥ [INFO] Cloud Messaging not available. App will use local notifications via Firebase listener.`);
       return;
     }
 
     const messaging = admin.messaging();
     if (!messaging) {
-      console.log(`📝 [INFO] Cloud Messaging SDK not initialized. App will use local notifications via Firebase listener.`);
+      console.log(`≡ƒô¥ [INFO] Cloud Messaging SDK not initialized. App will use local notifications via Firebase listener.`);
       return;
     }
 
@@ -157,17 +157,17 @@ async function sendAutomationNotification({ title, body, type, data = {} }) {
         },
       },
     });
-    console.log(`🔔 FCM Notification sent: ${type} (ID: ${result})`);
+    console.log(`≡ƒöö FCM Notification sent: ${type} (ID: ${result})`);
   } catch (error) {
     // Don't treat as error - app will handle notifications via Firebase listeners
-    console.log(`📝 [INFO] FCM not available (${error.message}). App will use local notifications via Firebase listener.`);
+    console.log(`≡ƒô¥ [INFO] FCM not available (${error.message}). App will use local notifications via Firebase listener.`);
   }
 }
 
 // Add error handlers for Firebase database
 db.ref('.info/connected').on('value', (snap) => {
   if (snap.val() === true) {
-    console.log('🔌 Firebase realtime connection active');
+    console.log('≡ƒöî Firebase realtime connection active');
   }
 });
 
@@ -176,8 +176,8 @@ db.ref('.info/connected').on('value', (snap) => {
 const redis = new Redis(config.redis);
 const wateringQueue = new Queue('watering', { connection: redis });
 
-redis.on('connect', () => console.log('✅ Redis connected'));
-redis.on('error', (err) => console.error('❌ Redis error:', err.message));
+redis.on('connect', () => console.log('Γ£à Redis connected'));
+redis.on('error', (err) => console.error('Γ¥î Redis error:', err.message));
 
 // Track last watering time PER-THRESHOLD (not per-pot!) untuk prevent spam
 const lastThresholdTime = {};
@@ -187,15 +187,15 @@ const lastThresholdTime = {};
 const wateringWorker = new Worker(
   'watering',
   async (job) => {
-    const { type, potNumbers, pompaAir, pompaPupuk, duration, scheduleId, thresholdId, smartMode, sensorData } = job.data;
+    const { type, potNumbers, pompaAir, pompaPupuk, pompaPengaduk, duration, scheduleId, thresholdId, smartMode, sensorData } = job.data;
 
-    console.log(`\n💧 Processing Job: ${job.id}`);
+    console.log(`\n≡ƒÆº Processing Job: ${job.id}`);
     console.log(`   Type: ${type}`);
     console.log(`   Pots: [${potNumbers.join(', ')}]`);
     console.log(`   Mode: ${smartMode ? 'SMART (auto-stop at target)' : 'FIXED'}`);
     console.log(`   Duration: ${duration}s ${smartMode ? '(max)' : ''}`);
     if (sensorData) {
-      console.log(`   Target: ${sensorData.batasBawah}% → ${sensorData.batasAtas}%`);
+      console.log(`   Target: ${sensorData.batasBawah}% ΓåÆ ${sensorData.batasAtas}%`);
     }
 
     try {
@@ -203,18 +203,19 @@ const wateringWorker = new Worker(
       const updates = {};
       if (pompaAir) updates['mosvet_1'] = true;
       if (pompaPupuk) updates['mosvet_2'] = true;
+      if (pompaPengaduk) updates['mosvet_8'] = true; // Enable pump/mixer
 
       // Turn ON valves for selected pots
       for (const pot of potNumbers) {
         if (pot >= 1 && pot <= 5) {
-          updates[`mosvet_${pot + 2}`] = true; // pot 1 → mosvet_3, etc.
+          updates[`mosvet_${pot + 2}`] = true; // pot 1 ΓåÆ mosvet_3, etc.
         }
       }
 
       // Turn ON
-      console.log('   🔛 Turning ON:', Object.keys(updates).join(', '));
-      console.log('   📌 Firebase path: aktuator');
-      console.log('   📝 Updates:', JSON.stringify(updates, null, 2));
+      console.log('   ≡ƒö¢ Turning ON:', Object.keys(updates).join(', '));
+      console.log('   ≡ƒôî Firebase path: aktuator');
+      console.log('   ≡ƒô¥ Updates:', JSON.stringify(updates, null, 2));
 
       if (String(type || '').startsWith('waktu_')) {
         const scheduleTime = job.data.scheduleTime || 'jadwal';
@@ -236,7 +237,7 @@ const wateringWorker = new Worker(
       await updateFirebaseSmart('aktuator', updates, 3);
       
       // Verify the update was written to Firebase
-      console.log(`   🔍 Verifying Firebase update...`);
+      console.log(`   ≡ƒöì Verifying Firebase update...`);
       const verifyAttempts = 3;
       let verified = false;
       for (let i = 0; i < verifyAttempts; i++) {
@@ -245,25 +246,25 @@ const wateringWorker = new Worker(
           const allSet = Object.keys(updates).every(key => currentState[key] === updates[key]);
           
           if (allSet) {
-            console.log(`   ✅ VERIFIED: All values correctly written to Firebase!`);
+            console.log(`   Γ£à VERIFIED: All values correctly written to Firebase!`);
             verified = true;
             break;
           } else {
-            console.warn(`   ⚠️  Verification attempt ${i + 1}/${verifyAttempts} failed: values not yet synced`);
+            console.warn(`   ΓÜá∩╕Å  Verification attempt ${i + 1}/${verifyAttempts} failed: values not yet synced`);
             if (i < verifyAttempts - 1) {
               await sleep(500); // Wait 500ms before retry
             }
           }
         } catch (verifyError) {
-          console.warn(`   ⚠️  Verification read failed (attempt ${i + 1}/${verifyAttempts}): ${verifyError.message}`);
+          console.warn(`   ΓÜá∩╕Å  Verification read failed (attempt ${i + 1}/${verifyAttempts}): ${verifyError.message}`);
         }
       }
       
       if (!verified) {
-        console.warn(`   ⚠️  WARNING: Could not verify Firebase update after ${verifyAttempts} attempts`);
+        console.warn(`   ΓÜá∩╕Å  WARNING: Could not verify Firebase update after ${verifyAttempts} attempts`);
       }
       
-      console.log(`   🚀 ALL VALVES STARTED SIMULTANEOUSLY: ${Object.keys(updates).filter(k => k.startsWith('mosvet_')).join(', ')}`);
+      console.log(`   ≡ƒÜÇ ALL VALVES STARTED SIMULTANEOUSLY: ${Object.keys(updates).filter(k => k.startsWith('mosvet_')).join(', ')}`);
       
       // SMART MODE: Monitor sensor and stop pots TOGETHER when they reach target
       if (smartMode && sensorData && sensorData.batasAtas) {
@@ -274,8 +275,8 @@ const wateringWorker = new Worker(
         // Track which pots are still actively watering
         let activePots = [...potNumbers];
         
-        console.log(`   🎯 SMART MODE: Monitoring ${activePots.length} pots, target ${targetSoil}%...`);
-        console.log(`   ⚡ Valves will stop TOGETHER when pots reach target (checked every 2s)`);
+        console.log(`   ≡ƒÄ» SMART MODE: Monitoring ${activePots.length} pots, target ${targetSoil}%...`);
+        console.log(`   ΓÜí Valves will stop TOGETHER when pots reach target (checked every 2s)`);
         
         while (activePots.length > 0 && Date.now() - startTime < maxDuration) {
           await sleep(2000); // Check every 2 seconds
@@ -293,10 +294,10 @@ const wateringWorker = new Worker(
                 const currentValue = parseInt(currentSensorData[soilKey]) || 0;
                 
                 if (currentValue >= targetSoil) {
-                  console.log(`   ✅ [${elapsed}s] POT ${pot}: ${currentValue}% >= ${targetSoil}% - TARGET REACHED!`);
+                  console.log(`   Γ£à [${elapsed}s] POT ${pot}: ${currentValue}% >= ${targetSoil}% - TARGET REACHED!`);
                   potsToStop.push(pot);
                 } else {
-                  console.log(`   ⏳ [${elapsed}s] POT ${pot}: ${currentValue}% < ${targetSoil}% - continuing...`);
+                  console.log(`   ΓÅ│ [${elapsed}s] POT ${pot}: ${currentValue}% < ${targetSoil}% - continuing...`);
                 }
               }
               
@@ -309,9 +310,9 @@ const wateringWorker = new Worker(
                 
                 try {
                   await updateFirebaseSmart('aktuator', stopUpdates, 2); // 2 attempts for stop
-                  console.log(`   🔴 STOPPED TOGETHER: ${Object.keys(stopUpdates).join(', ')} (Pots: [${potsToStop.join(', ')}])`);
+                  console.log(`   ≡ƒö┤ STOPPED TOGETHER: ${Object.keys(stopUpdates).join(', ')} (Pots: [${potsToStop.join(', ')}])`);
                 } catch (stopError) {
-                  console.error(`   ❌ FAILED to stop pots: ${stopError.message}`);
+                  console.error(`   Γ¥î FAILED to stop pots: ${stopError.message}`);
                   throw stopError; // Re-throw to safety handler
                 }
                 
@@ -320,28 +321,28 @@ const wateringWorker = new Worker(
               }
               
               if (activePots.length === 0) {
-                console.log(`   🎉 All pots reached target! Smart watering complete.`);
+                console.log(`   ≡ƒÄë All pots reached target! Smart watering complete.`);
               } else {
-                console.log(`   📍 Still watering: [${activePots.join(', ')}]`);
+                console.log(`   ≡ƒôì Still watering: [${activePots.join(', ')}]`);
               }
             }
           } catch (sensorError) {
-            console.warn(`   ⚠️ Failed to read sensor: ${sensorError.message}`);
+            console.warn(`   ΓÜá∩╕Å Failed to read sensor: ${sensorError.message}`);
           }
         }
         
         // If any pots still active after max duration (timeout), stop them now TOGETHER
         if (activePots.length > 0) {
-          console.log(`   ⏱️ Max duration ${duration}s reached. Force stopping remaining pots: [${activePots.join(', ')}]`);
+          console.log(`   ΓÅ▒∩╕Å Max duration ${duration}s reached. Force stopping remaining pots: [${activePots.join(', ')}]`);
           const timeoutStops = {};
           for (const pot of activePots) {
             timeoutStops[`mosvet_${pot + 2}`] = false;
           }
           try {
             await updateFirebaseSmart('aktuator', timeoutStops, 2); // 2 attempts for force stop
-            console.log(`   🔴 Force stopped TOGETHER: ${Object.keys(timeoutStops).join(', ')}`);
+            console.log(`   ≡ƒö┤ Force stopped TOGETHER: ${Object.keys(timeoutStops).join(', ')}`);
           } catch (forceStopError) {
-            console.error(`   ❌ FAILED to force stop pots: ${forceStopError.message}`);
+            console.error(`   Γ¥î FAILED to force stop pots: ${forceStopError.message}`);
             throw forceStopError;
           }
         }
@@ -350,16 +351,17 @@ const wateringWorker = new Worker(
         const pumpStop = {};
         if (pompaAir) pumpStop['mosvet_1'] = false;
         if (pompaPupuk) pumpStop['mosvet_2'] = false;
+        if (pompaPengaduk) pumpStop['mosvet_8'] = false; // Stop pump/mixer
         if (Object.keys(pumpStop).length > 0) {
           try {
             await updateFirebaseSmart('aktuator', pumpStop, 2); // 2 attempts for pump stop
-            console.log('   🔴 Pumps stopped:', Object.keys(pumpStop).join(', '));
+            console.log('   ≡ƒö┤ Pumps stopped:', Object.keys(pumpStop).join(', '));
           } catch (pumpStopError) {
-            console.error(`   ❌ FAILED to stop pumps: ${pumpStopError.message}`);
+            console.error(`   Γ¥î FAILED to stop pumps: ${pumpStopError.message}`);
             throw pumpStopError;
           }
         }
-        console.log('   ✅ Smart mode completed, now logging history...');
+        console.log('   Γ£à Smart mode completed, now logging history...');
         
       } else {
         // FIXED MODE: Wait for fixed duration
@@ -369,7 +371,7 @@ const wateringWorker = new Worker(
         while (Date.now() < endTime) {
           const remaining = Math.ceil((endTime - Date.now()) / 1000);
           if (remaining % 10 === 0 || remaining <= 5) {
-            console.log(`   ⏳ ${remaining}s remaining...`);
+            console.log(`   ΓÅ│ ${remaining}s remaining...`);
           }
           await sleep(1000);
         }
@@ -379,31 +381,31 @@ const wateringWorker = new Worker(
         for (const key in updates) {
           offUpdates[key] = false;
         }
-        console.log('   🔴 Turning OFF:', Object.keys(offUpdates).join(', '));
+        console.log('   ≡ƒö┤ Turning OFF:', Object.keys(offUpdates).join(', '));
         try {
           await updateFirebaseSmart('aktuator', offUpdates, 2); // 2 attempts for turn off
-          console.log('   ✅ Turn OFF completed successfully');
+          console.log('   Γ£à Turn OFF completed successfully');
         } catch (offError) {
-          console.error(`   ❌ FAILED to turn OFF: ${offError.message}`);
+          console.error(`   Γ¥î FAILED to turn OFF: ${offError.message}`);
           throw offError;
         }
-        console.log('   ✅ Now logging history...');
+        console.log('   Γ£à Now logging history...');
       }
 
       // Log history
       await logHistory(type, potNumbers, duration);
-      console.log('   ✅ History logged successfully');
+      console.log('   Γ£à History logged successfully');
 
       // Update last watering time PER-THRESHOLD (not per-pot!)
       if (thresholdId) {
         lastThresholdTime[thresholdId] = Date.now();
-        console.log(`   ⏰ Cooldown set for ${thresholdId} (2 minutes)`);
+        console.log(`   ΓÅ░ Cooldown set for ${thresholdId} (2 minutes)`);
       }
 
-      console.log(`   ✅ Job completed successfully`);
+      console.log(`   Γ£à Job completed successfully`);
       return { success: true, duration, pots: potNumbers };
     } catch (error) {
-      console.error(`   ❌ Job failed:`, error.message);
+      console.error(`   Γ¥î Job failed:`, error.message);
       console.error(`   [ERROR DETAILS] Stack:`, error.stack);
 
       // Safety: Turn OFF everything with retry
@@ -419,12 +421,12 @@ const wateringWorker = new Worker(
       };
       
       try {
-        console.log(`   🛡️ Safety: Attempting to turn OFF all aktuators...`);
+        console.log(`   ≡ƒ¢í∩╕Å Safety: Attempting to turn OFF all aktuators...`);
         await updateFirebaseSmart('aktuator', safetyUpdates, 2); // 2 attempts for safety
-        console.log('   🛡️ Safety: All aktuators turned OFF successfully');
+        console.log('   ≡ƒ¢í∩╕Å Safety: All aktuators turned OFF successfully');
       } catch (safetyError) {
-        console.error('   ❌ CRITICAL: Safety OFF failed:', safetyError.message);
-        console.error('   ❌ CRITICAL: Penyiraman mungkin terjebak ON - manual intervention mungkin diperlukan!');
+        console.error('   Γ¥î CRITICAL: Safety OFF failed:', safetyError.message);
+        console.error('   Γ¥î CRITICAL: Penyiraman mungkin terjebak ON - manual intervention mungkin diperlukan!');
       }
 
       throw error;
@@ -440,11 +442,11 @@ const wateringWorker = new Worker(
 );
 
 wateringWorker.on('completed', (job) => {
-  console.log(`✅ Worker completed job ${job.id}`);
+  console.log(`Γ£à Worker completed job ${job.id}`);
 });
 
 wateringWorker.on('failed', (job, err) => {
-  console.error(`❌ Worker failed job ${job?.id}:`, err.message);
+  console.error(`Γ¥î Worker failed job ${job?.id}:`, err.message);
 });
 
 // ==================== WAKTU MODE (TIME SCHEDULER) ====================
@@ -532,7 +534,7 @@ async function fetchKontrolSmart() {
       
       return data;
     } catch (restError) {
-      console.error('   ❌ REST API failed:', restError.message);
+      console.error('   Γ¥î REST API failed:', restError.message);
       throw new Error('REST API failed');
     }
   }
@@ -546,7 +548,7 @@ async function fetchKontrolSmart() {
     sdkSuccessCount++;
     return snapshot.val();
   } catch (sdkError) {
-    console.warn('   ⚠️  SDK fetch failed, trying REST API...');
+    console.warn('   ΓÜá∩╕Å  SDK fetch failed, trying REST API...');
     consecutiveFirebaseErrors++;
     
     try {
@@ -555,12 +557,12 @@ async function fetchKontrolSmart() {
       
       // Log peringatan jika SDK terus gagal
       if (consecutiveFirebaseErrors === SKIP_SDK_THRESHOLD) {
-        console.warn(`   🚨 SDK failed ${SKIP_SDK_THRESHOLD}x consecutively! Will use REST API directly for next ${RESET_THRESHOLD_AFTER} checks.`);
+        console.warn(`   ≡ƒÜ¿ SDK failed ${SKIP_SDK_THRESHOLD}x consecutively! Will use REST API directly for next ${RESET_THRESHOLD_AFTER} checks.`);
       }
       
       return data;
     } catch (restError) {
-      console.error('   ❌ REST API also failed:', restError.message);
+      console.error('   Γ¥î REST API also failed:', restError.message);
       throw new Error('Both SDK and REST API failed');
     }
   }
@@ -613,32 +615,32 @@ async function updateFirebaseSmart(path, updates, maxAttempts = 3) {
       if (shouldSkipSDK) {
         console.log(`   [UPDATE Attempt ${attempt}/${maxAttempts}] Using REST API directly (SDK disabled)`);
         await updateFirebaseViaREST(path, updates);
-        console.log(`   ✅ [UPDATE] REST API successful on attempt ${attempt}!`);
+        console.log(`   Γ£à [UPDATE] REST API successful on attempt ${attempt}!`);
         return true;
       }
       
       // Normal flow: Try SDK first
       console.log(`   [UPDATE Attempt ${attempt}/${maxAttempts}] Attempting SDK update...`);
       await updateWithTimeout(db.ref(path), updates, 5000);
-      console.log(`   ✅ [UPDATE] SDK update successful on attempt ${attempt}!`);
+      console.log(`   Γ£à [UPDATE] SDK update successful on attempt ${attempt}!`);
       return true;
     } catch (sdkError) {
       lastError = sdkError;
-      console.warn(`   ⚠️  [UPDATE Attempt ${attempt}/${maxAttempts}] SDK failed: ${sdkError.message}`);
+      console.warn(`   ΓÜá∩╕Å  [UPDATE Attempt ${attempt}/${maxAttempts}] SDK failed: ${sdkError.message}`);
       
       // Try REST API as fallback
       try {
         console.log(`   [UPDATE Attempt ${attempt}/${maxAttempts}] Fallback to REST API...`);
         await updateFirebaseViaREST(path, updates);
-        console.log(`   ✅ [UPDATE] REST API successful on attempt ${attempt}!`);
+        console.log(`   Γ£à [UPDATE] REST API successful on attempt ${attempt}!`);
         return true;
       } catch (restError) {
         lastError = restError;
-        console.error(`   ❌ [UPDATE Attempt ${attempt}/${maxAttempts}] REST failed: ${restError.message}`);
+        console.error(`   Γ¥î [UPDATE Attempt ${attempt}/${maxAttempts}] REST failed: ${restError.message}`);
         
         if (attempt < maxAttempts) {
           const delayMs = attempt * 1000; // 1s, 2s, 3s delay between attempts
-          console.log(`   ⏳ [UPDATE] Retrying after ${delayMs}ms...`);
+          console.log(`   ΓÅ│ [UPDATE] Retrying after ${delayMs}ms...`);
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
       }
@@ -646,8 +648,8 @@ async function updateFirebaseSmart(path, updates, maxAttempts = 3) {
   }
   
   // All attempts failed
-  console.error(`   ❌ [UPDATE] ALL ${maxAttempts} ATTEMPTS FAILED!`);
-  console.error(`   ❌ [UPDATE] Last error: ${lastError.message}`);
+  console.error(`   Γ¥î [UPDATE] ALL ${maxAttempts} ATTEMPTS FAILED!`);
+  console.error(`   Γ¥î [UPDATE] Last error: ${lastError.message}`);
   throw new Error(`Firebase update failed after ${maxAttempts} attempts: ${lastError.message}`);
 }
 
@@ -690,10 +692,10 @@ async function setFirebaseSmart(path, data) {
     console.log(`   [SET] Using REST API directly (SDK disabled)`);
     try {
       await setFirebaseViaREST(path, data);
-      console.log(`   ✅ [SET] REST API successful!`);
+      console.log(`   Γ£à [SET] REST API successful!`);
       return true;
     } catch (restError) {
-      console.error(`   ❌ [SET] REST failed: ${restError.message}`);
+      console.error(`   Γ¥î [SET] REST failed: ${restError.message}`);
       throw new Error('REST set failed');
     }
   }
@@ -701,17 +703,17 @@ async function setFirebaseSmart(path, data) {
   try {
     console.log(`   [SET] Step 1: Attempting SDK set...`);
     await setWithTimeout(db.ref(path), data, 5000);
-    console.log(`   ✅ [SET] Step 2: SDK set successful!`);
+    console.log(`   Γ£à [SET] Step 2: SDK set successful!`);
     return true;
   } catch (sdkError) {
-    console.warn(`   ⚠️  [SET] Step 2: SDK failed (${sdkError.message}), trying REST API...`);
+    console.warn(`   ΓÜá∩╕Å  [SET] Step 2: SDK failed (${sdkError.message}), trying REST API...`);
     try {
       console.log(`   [SET] Step 3: Attempting REST API...`);
       await setFirebaseViaREST(path, data);
-      console.log(`   ✅ [SET] Step 4: REST API successful!`);
+      console.log(`   Γ£à [SET] Step 4: REST API successful!`);
       return true;
     } catch (restError) {
-      console.error(`   ❌ [SET] Step 4: REST failed - BOTH METHODS FAILED!`);
+      console.error(`   Γ¥î [SET] Step 4: REST failed - BOTH METHODS FAILED!`);
       throw new Error('Both SDK and REST set failed');
     }
   }
@@ -786,7 +788,7 @@ function isScheduleInTriggerWindow(scheduleTime, now, windowStartMs, windowEndMs
 
 async function checkScheduledWatering() {
   checkCounter++;
-  console.log(`\n🔎 [DEBUG] checkScheduledWatering() called - Counter: ${checkCounter}`);
+  console.log(`\n≡ƒöÄ [DEBUG] checkScheduledWatering() called - Counter: ${checkCounter}`);
   
   try {
     console.log('   [DEBUG] Fetching Firebase /kontrol...');
@@ -797,7 +799,7 @@ async function checkScheduledWatering() {
     console.log(`   [DEBUG] Kontrol config received:`, kontrolConfig ? 'EXISTS' : 'NULL');
     
     if (!kontrolConfig) {
-      console.warn('   ⚠️  Kontrol config is NULL - schedule check aborted');
+      console.warn('   ΓÜá∩╕Å  Kontrol config is NULL - schedule check aborted');
       return;
     }
     
@@ -820,24 +822,24 @@ async function checkScheduledWatering() {
     const triggerWindowStartMs = boundedStartMs - graceMs;
     const triggerWindowEndMs = checkEndMs;
     
-    // 🔍 VERBOSE LOG: Log setiap check untuk memastikan fungsi berjalan
-    console.log(`\n⏱️  CHECK #${checkCounter}: ${currentTime}:${currentSeconds.toString().padStart(2, '0')} | Mode: ${kontrolConfig?.waktu ? '✅' : '❌'}`);
+    // ≡ƒöì VERBOSE LOG: Log setiap check untuk memastikan fungsi berjalan
+    console.log(`\nΓÅ▒∩╕Å  CHECK #${checkCounter}: ${currentTime}:${currentSeconds.toString().padStart(2, '0')} | Mode: ${kontrolConfig?.waktu ? 'Γ£à' : 'Γ¥î'}`);
     
     // Detect all schedules (jadwal_1, jadwal_2, jadwal_3, ...)
     const allSchedules = kontrolConfig ? Object.keys(kontrolConfig).filter(key => key.startsWith('jadwal_')) : [];
     
     if (allSchedules.length === 0) {
-      console.warn('   ⚠️  No jadwal found in kontrol config! Check Firebase structure.');
+      console.warn('   ΓÜá∩╕Å  No jadwal found in kontrol config! Check Firebase structure.');
     }
     
     // Log detail setiap 3 menit ATAU jika menit habis dibagi 5
     if (checkCounter % 3 === 0 || now.getMinutes() % 5 === 0) {
-      console.log(`   📅 Date: ${dateKey}`);
-      console.log(`   🕐 Current: ${currentTime} (${now.toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'})})`);
-      console.log(`   🪟 Trigger window: ${new Date(triggerWindowStartMs).toLocaleTimeString('id-ID')} - ${new Date(triggerWindowEndMs).toLocaleTimeString('id-ID')}`);
-      console.log(`   Mode Waktu: ${kontrolConfig?.waktu ? '✅ ENABLED' : '❌ DISABLED'}`);
-      console.log(`   📊 API Stats: SDK=${sdkSuccessCount} | REST=${restFallbackCount} | Errors=${consecutiveFirebaseErrors}`);
-      console.log(`   📋 Total Jadwal: ${allSchedules.length}`);
+      console.log(`   ≡ƒôà Date: ${dateKey}`);
+      console.log(`   ≡ƒòÉ Current: ${currentTime} (${now.toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'})})`);
+      console.log(`   ≡ƒ¬ƒ Trigger window: ${new Date(triggerWindowStartMs).toLocaleTimeString('id-ID')} - ${new Date(triggerWindowEndMs).toLocaleTimeString('id-ID')}`);
+      console.log(`   Mode Waktu: ${kontrolConfig?.waktu ? 'Γ£à ENABLED' : 'Γ¥î DISABLED'}`);
+      console.log(`   ≡ƒôè API Stats: SDK=${sdkSuccessCount} | REST=${restFallbackCount} | Errors=${consecutiveFirebaseErrors}`);
+      console.log(`   ≡ƒôï Total Jadwal: ${allSchedules.length}`);
       
       if (kontrolConfig?.waktu && allSchedules.length > 0) {
         allSchedules.forEach(scheduleKey => {
@@ -847,7 +849,7 @@ async function checkScheduledWatering() {
             const waktu = schedule.waktu || 'not set';
             const potAktif = schedule.pot_aktif || [];
             const isMatch = waktu === currentTime;
-            console.log(`   ${isActive ? '✅' : '❌'} ${scheduleKey}: ${waktu} → Pot [${potAktif.join(', ')}] ${isMatch ? '🔔 MATCH!' : ''}`);
+            console.log(`   ${isActive ? 'Γ£à' : 'Γ¥î'} ${scheduleKey}: ${waktu} ΓåÆ Pot [${potAktif.join(', ')}] ${isMatch ? '≡ƒöö MATCH!' : ''}`);
           }
         });
       }
@@ -871,7 +873,7 @@ async function checkScheduledWatering() {
       
       // Validate schedule structure
       if (!schedule || typeof schedule !== 'object') {
-        console.log(`   ⚠️  ${scheduleKey}: Invalid structure, skipping`);
+        console.log(`   ΓÜá∩╕Å  ${scheduleKey}: Invalid structure, skipping`);
         continue;
       }
       
@@ -897,7 +899,7 @@ async function checkScheduledWatering() {
       if (scheduleMs !== null) {
         const delayedSec = Math.max(0, Math.floor((triggerWindowEndMs - scheduleMs) / 1000));
         if (delayedSec > 0) {
-          console.log(`   ⏱️  ${scheduleKey}: Triggered with ${delayedSec}s delay (within tolerance)`);
+          console.log(`   ΓÅ▒∩╕Å  ${scheduleKey}: Triggered with ${delayedSec}s delay (within tolerance)`);
         }
       }
       
@@ -906,10 +908,11 @@ async function checkScheduledWatering() {
       const durasi = schedule.durasi || 60;
       const pompaAir = schedule.pompa_air !== false; // Default true
       const pompaPupuk = schedule.pompa_pupuk || false; // Default false
+      const pompaPengaduk = schedule.pompa_pengaduk || false; // Default false
       
       // Validate pot_aktif
       if (!Array.isArray(potAktif) || potAktif.length === 0) {
-        console.log(`   ⚠️  ${scheduleKey}: No active pots defined, skipping`);
+        console.log(`   ΓÜá∩╕Å  ${scheduleKey}: No active pots defined, skipping`);
         continue;
       }
       
@@ -918,11 +921,12 @@ async function checkScheduledWatering() {
       const jobKey = `${scheduleKey}_${dateKey}_${normalizedScheduleTime}`;
       
       if (!lastScheduleCheck[jobKey]) {
-        console.log(`\n🕐 ${scheduleKey.toUpperCase()} TRIGGERED: ${currentTime}`);
-        console.log(`   🎯 Pot aktif: [${potAktif.join(', ')}]`);
-        console.log(`   ⏱️  Durasi: ${durasi}s`);
-        console.log(`   💧 Pompa Air: ${pompaAir ? 'ON' : 'OFF'}`);
-        console.log(`   🌿 Pompa Pupuk: ${pompaPupuk ? 'ON' : 'OFF'}`);
+        console.log(`\n≡ƒòÉ ${scheduleKey.toUpperCase()} TRIGGERED: ${currentTime}`);
+        console.log(`   ≡ƒÄ» Pot aktif: [${potAktif.join(', ')}]`);
+        console.log(`   ΓÅ▒∩╕Å  Durasi: ${durasi}s`);
+        console.log(`   ≡ƒÆº Pompa Air: ${pompaAir ? 'ON' : 'OFF'}`);
+        console.log(`   ≡ƒî┐ Pompa Pupuk: ${pompaPupuk ? 'ON' : 'OFF'}`);
+        console.log(`   ≡ƒöä Pompa Pengaduk: ${pompaPengaduk ? 'ON' : 'OFF'}`);
 
         try {
           await wateringQueue.add(
@@ -932,6 +936,7 @@ async function checkScheduledWatering() {
               potNumbers: potAktif,
               pompaAir: pompaAir,
               pompaPupuk: pompaPupuk,
+              pompaPengaduk: kontrolConfig[`pengaduk_${scheduleKey.replace('jadwal_', '')}`] === true || false,
               duration: durasi,
               scheduleId: jobKey,
               scheduleTime: scheduleWaktu,
@@ -943,16 +948,16 @@ async function checkScheduledWatering() {
           );
           
           lastScheduleCheck[jobKey] = true;
-          console.log(`   ✅ Successfully added to queue: ${jobKey}`);
+          console.log(`   Γ£à Successfully added to queue: ${jobKey}`);
           
           // Check queue status
           const queueStatus = await wateringQueue.getJobCounts();
-          console.log(`   📊 Queue status: ${queueStatus.active} active, ${queueStatus.waiting} waiting`);
+          console.log(`   ≡ƒôè Queue status: ${queueStatus.active} active, ${queueStatus.waiting} waiting`);
         } catch (queueError) {
-          console.error(`   ❌ Failed to add ${scheduleKey} to queue:`, queueError.message);
+          console.error(`   Γ¥î Failed to add ${scheduleKey} to queue:`, queueError.message);
         }
       } else {
-        console.log(`   ⏭️  ${scheduleKey} already triggered: ${jobKey}`);
+        console.log(`   ΓÅ¡∩╕Å  ${scheduleKey} already triggered: ${jobKey}`);
       }
     }
     
@@ -969,8 +974,8 @@ async function checkScheduledWatering() {
       const scheduleKey = `legacy_jadwal_1_${dateKey}_${legacyTimeKey}`;
 
       if (!lastScheduleCheck[scheduleKey]) {
-        console.log(`\n🕐 [LEGACY] JADWAL 1 TRIGGERED: ${currentTime}`);
-        console.log(`   🎯 Using legacy format (all pots)`);
+        console.log(`\n≡ƒòÉ [LEGACY] JADWAL 1 TRIGGERED: ${currentTime}`);
+        console.log(`   ≡ƒÄ» Using legacy format (all pots)`);
 
         try {
           await wateringQueue.add(
@@ -980,6 +985,7 @@ async function checkScheduledWatering() {
               potNumbers: [1, 2, 3, 4, 5], // All pots
               pompaAir: true,
               pompaPupuk: true,
+              pompaPengaduk: kontrolConfig.pengaduk_1 === true || false,
               duration: kontrolConfig.durasi_1 || 60,
               scheduleId: scheduleKey,
               scheduleTime: kontrolConfig.waktu_1,
@@ -991,9 +997,9 @@ async function checkScheduledWatering() {
           );
           
           lastScheduleCheck[scheduleKey] = true;
-          console.log(`   ✅ Successfully added legacy jadwal_1 to queue`);
+          console.log(`   Γ£à Successfully added legacy jadwal_1 to queue`);
         } catch (queueError) {
-          console.error(`   ❌ Failed to add legacy jadwal_1:`, queueError.message);
+          console.error(`   Γ¥î Failed to add legacy jadwal_1:`, queueError.message);
         }
       }
     }
@@ -1010,8 +1016,8 @@ async function checkScheduledWatering() {
       const scheduleKey = `legacy_jadwal_2_${dateKey}_${legacyTimeKey}`;
 
       if (!lastScheduleCheck[scheduleKey]) {
-        console.log(`\n🕑 [LEGACY] JADWAL 2 TRIGGERED: ${currentTime}`);
-        console.log(`   🎯 Using legacy format (all pots)`);
+        console.log(`\n≡ƒòæ [LEGACY] JADWAL 2 TRIGGERED: ${currentTime}`);
+        console.log(`   ≡ƒÄ» Using legacy format (all pots)`);
 
         try {
           await wateringQueue.add(
@@ -1021,6 +1027,7 @@ async function checkScheduledWatering() {
               potNumbers: [1, 2, 3, 4, 5], // All pots
               pompaAir: true,
               pompaPupuk: true,
+              pompaPengaduk: kontrolConfig.pengaduk_2 === true || false,
               duration: kontrolConfig.durasi_2 || 60,
               scheduleId: scheduleKey,
               scheduleTime: kontrolConfig.waktu_2,
@@ -1032,9 +1039,9 @@ async function checkScheduledWatering() {
           );
 
           lastScheduleCheck[scheduleKey] = true;
-          console.log(`   ✅ Successfully added legacy jadwal_2 to queue`);
+          console.log(`   Γ£à Successfully added legacy jadwal_2 to queue`);
         } catch (queueError) {
-          console.error(`   ❌ Failed to add legacy jadwal_2:`, queueError.message);
+          console.error(`   Γ¥î Failed to add legacy jadwal_2:`, queueError.message);
         }
       }
     }
@@ -1045,12 +1052,12 @@ async function checkScheduledWatering() {
       delete lastScheduleCheck[key];
     }
   } catch (error) {
-    console.error('❌ Error checking scheduled watering:', error.message);
+    console.error('Γ¥î Error checking scheduled watering:', error.message);
     console.error('[DEBUG] Error type:', error.constructor.name);
     console.error('[DEBUG] Stack trace:', error.stack);
     
     if (error.message === 'Firebase fetch timeout') {
-      console.error('⚠️  Firebase is not responding! Network or connection issue.');
+      console.error('ΓÜá∩╕Å  Firebase is not responding! Network or connection issue.');
       console.error('   This could be:');
       console.error('   - Slow network connection');
       console.error('   - Firebase Realtime DB throttling');
@@ -1068,22 +1075,22 @@ setInterval(async () => {
   try {
     await checkScheduledWatering();
   } catch (error) {
-    console.error('❌ Error in scheduled check interval:', error.message);
+    console.error('Γ¥î Error in scheduled check interval:', error.message);
     console.error(error.stack);
   }
 }, config.worker.checkInterval);
-console.log(`✅ Waktu Mode scheduler started (check every ${config.worker.checkInterval / 1000}s)`);
+console.log(`Γ£à Waktu Mode scheduler started (check every ${config.worker.checkInterval / 1000}s)`);
 
 // Jalankan check pertama kali setelah 8 detik (setelah diagnostic selesai)
 setTimeout(async () => {
   try {
-    console.log('\n🚀 Running first schedule check immediately...');
+    console.log('\n≡ƒÜÇ Running first schedule check immediately...');
     console.log('[DEBUG] About to call checkScheduledWatering()...');
     await checkScheduledWatering();
     console.log('[DEBUG] checkScheduledWatering() returned');
-    console.log('✅ First check completed successfully');
+    console.log('Γ£à First check completed successfully');
   } catch (error) {
-    console.error('❌ First check failed:', error.message);
+    console.error('Γ¥î First check failed:', error.message);
     console.error('[DEBUG] Error stack:', error.stack);
   }
 }, 8000);
@@ -1102,7 +1109,7 @@ async function checkSensorThresholds() {
     const systemData = await readFirebaseSmart('system');
     if (systemData && systemData.sensor_mode_active_in_app === true) {
       if (sensorCheckCounter % 10 === 0) {
-        console.log(`🚨 WORKER SKIP: Sensor mode active in Flutter app (sensor_mode_active_in_app=true)`);
+        console.log(`≡ƒÜ¿ WORKER SKIP: Sensor mode active in Flutter app (sensor_mode_active_in_app=true)`);
       }
       return; // Skip all threshold checks - let Flutter handle it
     }
@@ -1111,7 +1118,7 @@ async function checkSensorThresholds() {
     const sensorData = await readFirebaseSmart('data');
     
     if (!sensorData) {
-      console.log('⚠️  Sensor data is null/empty - ESP32 might not be sending data');
+      console.log('ΓÜá∩╕Å  Sensor data is null/empty - ESP32 might not be sending data');
       return;
     }
 
@@ -1119,14 +1126,14 @@ async function checkSensorThresholds() {
     const kontrolConfig = await fetchKontrolSmart();
 
     if (!kontrolConfig) {
-      console.log('⚠️  Kontrol config is null');
+      console.log('ΓÜá∩╕Å  Kontrol config is null');
       return;
     }
     
     // Check if sensor mode is enabled (using 'otomatis' field, not deprecated 'sensor')
     if (!kontrolConfig.otomatis) {
       if (sensorCheckCounter % 10 === 0) {
-        console.log(`⚠️  Sensor mode DISABLED (otomatis=false). Skipping threshold check.`);
+        console.log(`ΓÜá∩╕Å  Sensor mode DISABLED (otomatis=false). Skipping threshold check.`);
       }
       return;
     }
@@ -1135,11 +1142,11 @@ async function checkSensorThresholds() {
     const allThresholds = Object.keys(kontrolConfig).filter(key => key.startsWith('threshold_'));
 
     // Log sensor check (ALWAYS LOG untuk debugging)
-    console.log(`\n🌡️  SENSOR CHECK #${sensorCheckCounter} | Total Thresholds: ${allThresholds.length}`);
-    console.log(`   📊 Sensor Data:`, JSON.stringify(sensorData, null, 2));
+    console.log(`\n≡ƒîí∩╕Å  SENSOR CHECK #${sensorCheckCounter} | Total Thresholds: ${allThresholds.length}`);
+    console.log(`   ≡ƒôè Sensor Data:`, JSON.stringify(sensorData, null, 2));
 
     if (allThresholds.length === 0) {
-      console.log('   ⚠️  No thresholds configured');
+      console.log('   ΓÜá∩╕Å  No thresholds configured');
       return;
     }
 
@@ -1147,19 +1154,19 @@ async function checkSensorThresholds() {
     for (const thresholdKey of allThresholds) {
       const threshold = kontrolConfig[thresholdKey];
       
-      console.log(`\n   🔍 Checking ${thresholdKey}:`);
+      console.log(`\n   ≡ƒöì Checking ${thresholdKey}:`);
       console.log(`      Config:`, JSON.stringify(threshold, null, 2));
       
       // Skip if threshold is not active or invalid
       if (!threshold || !threshold.aktif) {
-        console.log(`      ❌ Skipped: ${!threshold ? 'Not found' : 'Not active (aktif=false)'}`);
+        console.log(`      Γ¥î Skipped: ${!threshold ? 'Not found' : 'Not active (aktif=false)'}`);
         continue;
       }
 
       // ============ ANTI-SPAM CHECK 2: Firebase Threshold Cooldown ============
       const thresholdCooldown = await checkThresholdCooldown(thresholdKey);
       if (thresholdCooldown.inCooldown) {
-        console.log(`      🚨 ${thresholdKey}: Firebase COOLDOWN active (${thresholdCooldown.remainingSeconds}s remaining) - SKIP`);
+        console.log(`      ≡ƒÜ¿ ${thresholdKey}: Firebase COOLDOWN active (${thresholdCooldown.remainingSeconds}s remaining) - SKIP`);
         continue; // Skip this threshold entirely
       }
 
@@ -1167,7 +1174,7 @@ async function checkSensorThresholds() {
       const lastTime = lastThresholdTime[thresholdKey];
       if (lastTime && Date.now() - lastTime < config.worker.sensorDebounce) {
         const remainingSeconds = Math.ceil((config.worker.sensorDebounce - (Date.now() - lastTime)) / 1000);
-        console.log(`      ⏳ ${thresholdKey}: Memory cooldown active (${remainingSeconds}s remaining) - SKIPPING entire threshold`);
+        console.log(`      ΓÅ│ ${thresholdKey}: Memory cooldown active (${remainingSeconds}s remaining) - SKIPPING entire threshold`);
         continue;
       }
 
@@ -1178,6 +1185,7 @@ async function checkSensorThresholds() {
       const potAktif = threshold.pot_aktif || [];
       const pompaAir = threshold.pompa_air === true;
       const pompaPupuk = threshold.pompa_pupuk === true;
+      const pompaPengaduk = threshold.pompa_pengaduk === true;
 
       // Collect pots that need watering in this threshold
       const potsNeedWatering = [];
@@ -1186,53 +1194,53 @@ async function checkSensorThresholds() {
       // Check each pot in this threshold
       for (const potNumber of potAktif) {
         if (potNumber < 1 || potNumber > 5) {
-          console.log(`      ⚠️  POT ${potNumber}: Invalid pot number (must be 1-5)`);
+          console.log(`      ΓÜá∩╕Å  POT ${potNumber}: Invalid pot number (must be 1-5)`);
           continue;
         }
 
         const soilKey = `soil_${potNumber}`;
         const soilValue = parseInt(sensorData[soilKey]) || 0;
 
-        console.log(`      🌱 POT ${potNumber} (${soilKey}): ${soilValue}% | Threshold: ${batasBawah}-${batasAtas}%`);
-        console.log(`         → Raw value: ${sensorData[soilKey]} | Parsed: ${soilValue} | Check: ${soilValue} < ${batasBawah} = ${soilValue < batasBawah}`);
+        console.log(`      ≡ƒî▒ POT ${potNumber} (${soilKey}): ${soilValue}% | Threshold: ${batasBawah}-${batasAtas}%`);
+        console.log(`         ΓåÆ Raw value: ${sensorData[soilKey]} | Parsed: ${soilValue} | Check: ${soilValue} < ${batasBawah} = ${soilValue < batasBawah}`);
 
         // ============ ANTI-SPAM CHECK 3: Firebase Per-Pot Cooldown ============
         const potCooldown = await checkPotCooldown(potNumber);
         if (potCooldown.inCooldown) {
-          console.log(`      🚨 POT ${potNumber}: Firebase COOLDOWN active (${potCooldown.remainingSeconds}s remaining) - SKIP`);
+          console.log(`      ≡ƒÜ¿ POT ${potNumber}: Firebase COOLDOWN active (${potCooldown.remainingSeconds}s remaining) - SKIP`);
           continue; // Skip this pot
         }
 
         // NEW: Check if ABOVE upper threshold - skip if too wet!
         if (soilValue >= batasAtas) {
-          console.log(`      ✅ POT ${potNumber}: SKIP (${soilValue}% >= ${batasAtas}% - sudah basah!)`);
+          console.log(`      Γ£à POT ${potNumber}: SKIP (${soilValue}% >= ${batasAtas}% - sudah basah!)`);
           continue;
         }
 
         // Check if below lower threshold
         if (soilValue < batasBawah) {
-          console.log(`      🚨 POT ${potNumber} KERING! ${soilValue}% < ${batasBawah}%`);
+          console.log(`      ≡ƒÜ¿ POT ${potNumber} KERING! ${soilValue}% < ${batasBawah}%`);
           
           // Add to watering list (cooldown already checked at threshold level)
           potsNeedWatering.push(potNumber);
           potDetails.push({ pot: potNumber, value: soilValue });
         } else {
-          console.log(`      ✅ POT ${potNumber}: OK (${soilValue}% >= ${batasBawah}%)`);
+          console.log(`      Γ£à POT ${potNumber}: OK (${soilValue}% >= ${batasBawah}%)`);
         }
       }
 
       // NEW: Create SINGLE job for ALL pots that need watering in this threshold
       if (potsNeedWatering.length > 0) {
-        console.log(`\n🌡️ THRESHOLD TRIGGERED: ${thresholdKey.toUpperCase()}`);
+        console.log(`\n≡ƒîí∩╕Å THRESHOLD TRIGGERED: ${thresholdKey.toUpperCase()}`);
         console.log(`   Pots needing water: [${potsNeedWatering.join(', ')}]`);
         potDetails.forEach(p => console.log(`   - POT ${p.pot}: ${p.value}% < ${batasBawah}%`));
         console.log(`   Mode: ${smartMode ? 'Smart (monitor until ' + batasAtas + '%)' : 'Fixed (' + durasi + 's)'}`);
-        console.log(`   Pumps: Air=${pompaAir}, Pupuk=${pompaPupuk}`);
+        console.log(`   Pumps: Air=${pompaAir}, Pupuk=${pompaPupuk}, Pengaduk=${pompaPengaduk}`);
 
         // Set Firebase cooldowns BEFORE creating job
         await setThresholdCooldown(thresholdKey, 2); // 2 minutes
         await Promise.all(potsNeedWatering.map(pot => setPotCooldown(pot, 2))); // 2 minutes each
-        console.log(`   🔒 Firebase cooldowns SET for threshold + pots`);
+        console.log(`   ≡ƒöÆ Firebase cooldowns SET for threshold + pots`);
 
         await sendAutomationNotification({
           title: 'ApsGo - Penyiraman Otomatis',
@@ -1256,6 +1264,7 @@ async function checkSensorThresholds() {
             potNumbers: potsNeedWatering,  // ALL pots in 1 job!
             pompaAir: pompaAir,
             pompaPupuk: pompaPupuk,
+            pompaPengaduk: pompaPengaduk,
             duration: durasi,
             scheduleId: jobId,
             thresholdId: thresholdKey,
@@ -1274,13 +1283,13 @@ async function checkSensorThresholds() {
           }
         );
 
-        console.log(`   📌 Added to queue: ${jobId}`);
-        console.log(`   🔄 ${thresholdKey} will execute simultaneously for ALL pots`);
-        console.log(`   ⏰ After completion, ${thresholdKey} cooldown = 2 minutes (other thresholds can still run)`);
+        console.log(`   ≡ƒôî Added to queue: ${jobId}`);
+        console.log(`   ≡ƒöä ${thresholdKey} will execute simultaneously for ALL pots`);
+        console.log(`   ΓÅ░ After completion, ${thresholdKey} cooldown = 2 minutes (other thresholds can still run)`);
       }
     }
   } catch (error) {
-    console.error('❌ Error in sensor threshold check:', error.message);
+    console.error('Γ¥î Error in sensor threshold check:', error.message);
   }
 }
 
@@ -1309,7 +1318,7 @@ async function checkThresholdCooldown(thresholdId) {
 
     return { inCooldown: false };
   } catch (error) {
-    console.log('⚠️  Error checking threshold cooldown:', error.message);
+    console.log('ΓÜá∩╕Å  Error checking threshold cooldown:', error.message);
     return { inCooldown: false };
   }
 }
@@ -1338,7 +1347,7 @@ async function checkPotCooldown(potNumber) {
 
     return { inCooldown: false };
   } catch (error) {
-    console.log('⚠️  Error checking pot cooldown:', error.message);
+    console.log('ΓÜá∩╕Å  Error checking pot cooldown:', error.message);
     return { inCooldown: false };
   }
 }
@@ -1352,9 +1361,9 @@ async function setThresholdCooldown(thresholdId, cooldownMinutes = 2) {
       cooldownMinutes: cooldownMinutes,
       lastUpdatedAt: new Date().toISOString(),
     });
-    console.log(`      🔒 Threshold cooldown SET: ${thresholdId} (${cooldownMinutes} min)`);
+    console.log(`      ≡ƒöÆ Threshold cooldown SET: ${thresholdId} (${cooldownMinutes} min)`);
   } catch (error) {
-    console.log('⚠️  Error setting threshold cooldown:', error.message);
+    console.log('ΓÜá∩╕Å  Error setting threshold cooldown:', error.message);
   }
 }
 
@@ -1368,18 +1377,18 @@ async function setPotCooldown(potNumber, cooldownMinutes = 2) {
       lastUpdatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.log('⚠️  Error setting pot cooldown:', error.message);
+    console.log('ΓÜá∩╕Å  Error setting pot cooldown:', error.message);
   }
 }
 
 // Setup sensor monitoring with BOTH listener (SDK) and polling (fallback)
 async function setupSensorMonitoring() {
-  console.log('🌡️  ==================== SENSOR MODE ENABLED ====================');
-  console.log('✅ Sensor Mode (Threshold System) monitoring started');
-  console.log('📍 Primary: Polling every 30 seconds (REST API)');
-  console.log('📍 Backup: Firebase listener on /data (if SDK works)');
-  console.log('📍 Config path: /' + FIREBASE_PATHS.kontrol);
-  console.log('⏱️  Debounce time: 2 minutes between watering per pot');
+  console.log('≡ƒîí∩╕Å  ==================== SENSOR MODE ENABLED ====================');
+  console.log('Γ£à Sensor Mode (Threshold System) monitoring started');
+  console.log('≡ƒôì Primary: Polling every 30 seconds (REST API)');
+  console.log('≡ƒôì Backup: Firebase listener on /data (if SDK works)');
+  console.log('≡ƒôì Config path: /' + FIREBASE_PATHS.kontrol);
+  console.log('ΓÅ▒∩╕Å  Debounce time: 2 minutes between watering per pot');
   console.log('================================================================\n');
 
   // METHOD 1: Polling (RELIABLE - uses REST API)
@@ -1388,33 +1397,33 @@ async function setupSensorMonitoring() {
     try {
       await checkSensorThresholds();
     } catch (error) {
-      console.error('❌ Polling sensor check failed:', error.message);
+      console.error('Γ¥î Polling sensor check failed:', error.message);
     }
   }, 30000); // 30 seconds
 
   // Run first check immediately
   setTimeout(async () => {
-    console.log('🚀 Running first sensor check...');
+    console.log('≡ƒÜÇ Running first sensor check...');
     try {
       await checkSensorThresholds();
-      console.log('✅ First sensor check completed');
+      console.log('Γ£à First sensor check completed');
     } catch (error) {
-      console.error('❌ First sensor check failed:', error.message);
+      console.error('Γ¥î First sensor check failed:', error.message);
     }
   }, 10000); // 10 seconds after startup
 
   // METHOD 2: Firebase Listener (BACKUP - might not work if SDK fails)
   try {
     db.ref('data').on('value', async (snapshot) => {
-      console.log('🔔 Firebase listener triggered (SDK working!)');
+      console.log('≡ƒöö Firebase listener triggered (SDK working!)');
       // Call the same check function
       await checkSensorThresholds();
     }, (error) => {
-      console.error('❌ Firebase listener error:', error.message);
+      console.error('Γ¥î Firebase listener error:', error.message);
     });
-    console.log('✅ Firebase listener attached (backup method)');
+    console.log('Γ£à Firebase listener attached (backup method)');
   } catch (error) {
-    console.log('⚠️  Firebase listener failed to attach (will rely on polling)');
+    console.log('ΓÜá∩╕Å  Firebase listener failed to attach (will rely on polling)');
   }
 }
 
@@ -1440,9 +1449,9 @@ async function logHistory(type, potNumbers, duration) {
       ...sensorData,
     });
 
-    console.log(`   📊 History logged: ${dateKey} ${timeKey}`);
+    console.log(`   ≡ƒôè History logged: ${dateKey} ${timeKey}`);
   } catch (error) {
-    console.error('   ⚠️ Failed to log history:', error.message);
+    console.error('   ΓÜá∩╕Å Failed to log history:', error.message);
   }
 }
 
@@ -1465,22 +1474,22 @@ const autoLogJob = new cron.CronJob('*/30 * * * *', async () => {
         ...sensorData,
       });
 
-      console.log(`📊 Auto-logged sensor data: ${timeKey}`);
+      console.log(`≡ƒôè Auto-logged sensor data: ${timeKey}`);
     }
   } catch (error) {
-    console.error('❌ Auto-log failed:', error.message);
+    console.error('Γ¥î Auto-log failed:', error.message);
   }
 });
 
 autoLogJob.start();
-console.log('✅ Auto history logging started (every 30 minutes)');
+console.log('Γ£à Auto history logging started (every 30 minutes)');
 
 // ==================== CLEANUP OLD HISTORY (DAILY) ====================
 
 const cleanupJob = new cron.CronJob('0 2 * * *', async () => {
   // Run daily at 2 AM
   try {
-    console.log('\n🧹 Running history cleanup...');
+    console.log('\n≡ƒº╣ Running history cleanup...');
     const daysToKeep = 10;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
@@ -1499,21 +1508,21 @@ const cleanupJob = new cron.CronJob('0 2 * * *', async () => {
             const url = `${config.firebase.databaseURL}/history/${dateKey}.json`;
             await fetchWithTimeout2(url, { method: 'DELETE' }, 10000);
             deletedCount++;
-            console.log(`   🗑️ Deleted: ${dateKey}`);
+            console.log(`   ≡ƒùæ∩╕Å Deleted: ${dateKey}`);
           }
         } catch (error) {
-          console.error(`   ⚠️ Error deleting ${dateKey}:`, error.message);
+          console.error(`   ΓÜá∩╕Å Error deleting ${dateKey}:`, error.message);
         }
       }
-      console.log(`✅ Cleanup completed: ${deletedCount} dates removed`);
+      console.log(`Γ£à Cleanup completed: ${deletedCount} dates removed`);
     }
   } catch (error) {
-    console.error('❌ Cleanup failed:', error.message);
+    console.error('Γ¥î Cleanup failed:', error.message);
   }
 });
 
 cleanupJob.start();
-console.log('✅ History cleanup scheduled (daily at 2 AM)');
+console.log('Γ£à History cleanup scheduled (daily at 2 AM)');
 
 // ==================== UTILITIES ====================
 
@@ -1523,10 +1532,10 @@ function sleep(ms) {
 
 // ==================== MANUAL TEST FUNCTIONS ====================
 
-// 🧪 Test scheduler sekarang juga (untuk debugging)
+// ≡ƒº¬ Test scheduler sekarang juga (untuk debugging)
 async function testSchedulerNow() {
   try {
-    console.log('\n🧪 MANUAL TEST: Triggering test watering job NOW...');
+    console.log('\n≡ƒº¬ MANUAL TEST: Triggering test watering job NOW...');
     
     const now = new Date();
     const testJobId = `manual-test-${now.getTime()}`;
@@ -1548,21 +1557,21 @@ async function testSchedulerNow() {
       }
     );
     
-    console.log(`✅ Test job added: ${testJobId}`);
+    console.log(`Γ£à Test job added: ${testJobId}`);
     console.log('   Watch for job processing logs...');
   } catch (error) {
-    console.error('❌ Test scheduler failed:', error.message);
+    console.error('Γ¥î Test scheduler failed:', error.message);
   }
 }
 
-// 🔍 Check Firebase aktuator node structure
+// ≡ƒöì Check Firebase aktuator node structure
 async function checkAktuatorNode() {
   try {
-    console.log('\n🔍 CHECKING AKTUATOR NODE...');
+    console.log('\n≡ƒöì CHECKING AKTUATOR NODE...');
     const aktuatorData = await readFirebaseSmart('aktuator');
     
     if (!aktuatorData) {
-      console.log('❌ Aktuator node NOT FOUND in Firebase!');
+      console.log('Γ¥î Aktuator node NOT FOUND in Firebase!');
       console.log('   Creating default aktuator structure...');
       
       await setFirebaseSmart('aktuator', {
@@ -1576,9 +1585,9 @@ async function checkAktuatorNode() {
         mosvet_8: false,  // Pengaduk
       });
       
-      console.log('✅ Aktuator node created with defaults');
+      console.log('Γ£à Aktuator node created with defaults');
     } else {
-      console.log('✅ Aktuator node exists:');
+      console.log('Γ£à Aktuator node exists:');
       for (const key in aktuatorData) {
         console.log(`   ${key}: ${aktuatorData[key]}`);
       }
@@ -1588,26 +1597,26 @@ async function checkAktuatorNode() {
       const missing = required.filter(key => !(key in aktuatorData));
       
       if (missing.length > 0) {
-        console.log(`⚠️  Missing mosvets: ${missing.join(', ')}`);
+        console.log(`ΓÜá∩╕Å  Missing mosvets: ${missing.join(', ')}`);
         console.log('   Adding missing mosvets...');
         
         const updates = {};
         missing.forEach(key => updates[key] = false);
         await updateFirebaseSmart('aktuator', updates);
         
-        console.log('✅ Missing mosvets added');
+        console.log('Γ£à Missing mosvets added');
       }
     }
   } catch (error) {
-    console.error('❌ Aktuator check failed:', error.message);
+    console.error('Γ¥î Aktuator check failed:', error.message);
   }
 }
 
-// 🕐 Show current time in multiple formats
+// ≡ƒòÉ Show current time in multiple formats
 async function showCurrentTime() {
   try {
     const now = new Date();
-    console.log('\n🕐 CURRENT TIME ANALYSIS:');
+    console.log('\n≡ƒòÉ CURRENT TIME ANALYSIS:');
     console.log(`   Server Local: ${now.toString()}`);
     console.log(`   Asia/Jakarta: ${now.toLocaleString('id-ID', {timeZone: 'Asia/Jakarta'})}`);
     console.log(`   ISO: ${now.toISOString()}`);
@@ -1622,17 +1631,17 @@ async function showCurrentTime() {
     console.log('[DEBUG] Kontrol fetch successful');
     
     if (kontrolConfig) {
-      console.log('\n📋 FIREBASE KONTROL:');
-      console.log(`   Mode Waktu: ${kontrolConfig.waktu ? 'ENABLED ✅' : 'DISABLED ❌'}`);
+      console.log('\n≡ƒôï FIREBASE KONTROL:');
+      console.log(`   Mode Waktu: ${kontrolConfig.waktu ? 'ENABLED Γ£à' : 'DISABLED Γ¥î'}`);
       console.log(`   Waktu 1: ${kontrolConfig.waktu_1 || 'not set'}`);
       console.log(`   Waktu 2: ${kontrolConfig.waktu_2 || 'not set'}`);
       console.log(`   Durasi 1: ${kontrolConfig.durasi_1 || 'not set'}s`);
       console.log(`   Durasi 2: ${kontrolConfig.durasi_2 || 'not set'}s`);
     } else {
-      console.log('\n❌ Firebase kontrol node is empty!');
+      console.log('\nΓ¥î Firebase kontrol node is empty!');
     }
   } catch (error) {
-    console.error('❌ Time check failed:', error.message);
+    console.error('Γ¥î Time check failed:', error.message);
   }
 }
 
@@ -1649,12 +1658,12 @@ async function healthCheck() {
     // Check queue
     const queueStatus = await wateringQueue.getJobCounts();
 
-    console.log('\n💚 HEALTH CHECK:');
-    console.log(`   Firebase: ${firebaseOk ? '✅' : '❌'} Connected`);
-    console.log(`   Redis: ✅ Connected`);
+    console.log('\n≡ƒÆÜ HEALTH CHECK:');
+    console.log(`   Firebase: ${firebaseOk ? 'Γ£à' : 'Γ¥î'} Connected`);
+    console.log(`   Redis: Γ£à Connected`);
     console.log(`   Queue: ${queueStatus.active} active, ${queueStatus.waiting} waiting`);
   } catch (error) {
-    console.error('❤️‍🩹 HEALTH CHECK FAILED:', error.message);
+    console.error('Γ¥ñ∩╕ÅΓÇì≡ƒ⌐╣ HEALTH CHECK FAILED:', error.message);
   }
 }
 
@@ -1664,24 +1673,24 @@ setInterval(healthCheck, 300000);
 // ==================== GRACEFUL SHUTDOWN ====================
 
 async function shutdown() {
-  console.log('\n🛑 Shutting down gracefully...');
+  console.log('\n≡ƒ¢æ Shutting down gracefully...');
 
   try {
     await wateringWorker.close();
-    console.log('✅ Worker closed');
+    console.log('Γ£à Worker closed');
 
     await wateringQueue.close();
-    console.log('✅ Queue closed');
+    console.log('Γ£à Queue closed');
 
     await redis.quit();
-    console.log('✅ Redis disconnected');
+    console.log('Γ£à Redis disconnected');
 
     await admin.app().delete();
-    console.log('✅ Firebase disconnected');
+    console.log('Γ£à Firebase disconnected');
 
     process.exit(0);
   } catch (error) {
-    console.error('❌ Shutdown error:', error.message);
+    console.error('Γ¥î Shutdown error:', error.message);
     process.exit(1);
   }
 }
@@ -1693,30 +1702,30 @@ process.on('SIGINT', shutdown);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error.message);
+  console.error('Γ¥î Uncaught Exception:', error.message);
   console.error(error.stack);
   // Don't exit - try to keep worker running
-  console.log('⚠️  Worker continuing despite error...');
+  console.log('ΓÜá∩╕Å  Worker continuing despite error...');
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Γ¥î Unhandled Rejection at:', promise);
   console.error('Reason:', reason);
   // Don't exit - try to keep worker running
-  console.log('⚠️  Worker continuing despite rejection...');
+  console.log('ΓÜá∩╕Å  Worker continuing despite rejection...');
 });
 
 // ==================== STARTUP COMPLETE ====================
 
-console.log('\n✨ ApsGo Railway Worker is running!');
-console.log('📊 Features enabled:');
-console.log('   • Waktu Mode (Time-based scheduling)');
-console.log('   • Sensor Mode (Threshold-based automation)');
-console.log('   • Auto History Logging (every 30 min)');
-console.log('   • History Cleanup (daily at 2 AM)');
-console.log('   • Health Check (every 5 min)');
-console.log('\n🎯 Worker is ready to process jobs...\n');
+console.log('\nΓ£¿ ApsGo Railway Worker is running!');
+console.log('≡ƒôè Features enabled:');
+console.log('   ΓÇó Waktu Mode (Time-based scheduling)');
+console.log('   ΓÇó Sensor Mode (Threshold-based automation)');
+console.log('   ΓÇó Auto History Logging (every 30 min)');
+console.log('   ΓÇó History Cleanup (daily at 2 AM)');
+console.log('   ΓÇó Health Check (every 5 min)');
+console.log('\n≡ƒÄ» Worker is ready to process jobs...\n');
 
 // Initial health check
 setTimeout(healthCheck, 5000);
@@ -1728,41 +1737,41 @@ setInterval(() => {
   const uptime = Math.floor(process.uptime());
   const hours = Math.floor(uptime / 3600);
   const minutes = Math.floor((uptime % 3600) / 60);
-  console.log(`💓 Heartbeat: Worker alive for ${hours}h ${minutes}m`);
+  console.log(`≡ƒÆô Heartbeat: Worker alive for ${hours}h ${minutes}m`);
 }, 30000);
 
 // Verify Firebase connection on startup
 setTimeout(async () => {
   try {
-    console.log('🔍 Verifying Firebase connection...');
+    console.log('≡ƒöì Verifying Firebase connection...');
     console.log('[DEBUG] Testing Firebase read with timeout...');
     const snapshot = await fetchWithTimeout(db.ref(FIREBASE_PATHS.kontrol), 10000);
     console.log('[DEBUG] Firebase read successful!');
     const data = snapshot.val();
     if (data) {
-      console.log(`✅ Firebase /${FIREBASE_PATHS.kontrol} readable - waktu mode:`, data.waktu ? 'ENABLED' : 'DISABLED');
+      console.log(`Γ£à Firebase /${FIREBASE_PATHS.kontrol} readable - waktu mode:`, data.waktu ? 'ENABLED' : 'DISABLED');
       if (data.waktu) {
-        console.log(`   📅 Schedules: ${data.waktu_1 || 'none'} / ${data.waktu_2 || 'none'}`);
+        console.log(`   ≡ƒôà Schedules: ${data.waktu_1 || 'none'} / ${data.waktu_2 || 'none'}`);
       }
     } else {
-      console.log('⚠️  Firebase /kontrol is empty - waiting for Flutter app to set schedule');
+      console.log('ΓÜá∩╕Å  Firebase /kontrol is empty - waiting for Flutter app to set schedule');
     }
   } catch (error) {
-    console.error('❌ Firebase verification failed:', error.message);
+    console.error('Γ¥î Firebase verification failed:', error.message);
   }
 }, 3000);
 
 // Run diagnostic checks on startup
 setTimeout(async () => {
   try {
-    console.log('\n🔧 RUNNING DIAGNOSTIC CHECKS...');
+    console.log('\n≡ƒöº RUNNING DIAGNOSTIC CHECKS...');
     await showCurrentTime();
     await checkAktuatorNode();
-    console.log('\n✅ Diagnostic checks completed');
-    console.log('\n💡 TIP: To test scheduler manually, check the logs above for current time');
+    console.log('\nΓ£à Diagnostic checks completed');
+    console.log('\n≡ƒÆí TIP: To test scheduler manually, check the logs above for current time');
     console.log('   Then set waktu_1 or waktu_2 in Firebase to match current time + 1 minute');
   } catch (error) {
-    console.error('❌ Diagnostic checks failed:', error.message);
+    console.error('Γ¥î Diagnostic checks failed:', error.message);
     console.error(error.stack);
   }
 }, 5000);
