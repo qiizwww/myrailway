@@ -1097,6 +1097,16 @@ async function checkSensorThresholds() {
   sensorCheckCounter++;
   
   try {
+    // ============ ANTI-SPAM CHECK 1: Is Flutter sensor mode active? ============
+    // If Flutter is handling sensor mode, worker should NOT create duplicate jobs
+    const systemData = await readFirebaseSmart('system');
+    if (systemData && systemData.sensor_mode_active_in_app === true) {
+      if (sensorCheckCounter % 10 === 0) {
+        console.log(`🚨 WORKER SKIP: Sensor mode active in Flutter app (sensor_mode_active_in_app=true)`);
+      }
+      return; // Skip all threshold checks - let Flutter handle it
+    }
+
     // Fetch sensor data using smart method (REST fallback)
     const sensorData = await readFirebaseSmart('data');
     
@@ -1146,11 +1156,18 @@ async function checkSensorThresholds() {
         continue;
       }
 
-      // Check THRESHOLD cooldown (not per-pot!)
+      // ============ ANTI-SPAM CHECK 2: Firebase Threshold Cooldown ============
+      const thresholdCooldown = await checkThresholdCooldown(thresholdKey);
+      if (thresholdCooldown.inCooldown) {
+        console.log(`      🚨 ${thresholdKey}: Firebase COOLDOWN active (${thresholdCooldown.remainingSeconds}s remaining) - SKIP`);
+        continue; // Skip this threshold entirely
+      }
+
+      // Check THRESHOLD cooldown (memory-based backup)
       const lastTime = lastThresholdTime[thresholdKey];
       if (lastTime && Date.now() - lastTime < config.worker.sensorDebounce) {
         const remainingSeconds = Math.ceil((config.worker.sensorDebounce - (Date.now() - lastTime)) / 1000);
-        console.log(`      ⏳ ${thresholdKey}: Cooldown active (${remainingSeconds}s remaining) - skipping entire threshold`);
+        console.log(`      ⏳ ${thresholdKey}: Memory cooldown active (${remainingSeconds}s remaining) - SKIPPING entire threshold`);
         continue;
       }
 
@@ -1179,6 +1196,13 @@ async function checkSensorThresholds() {
         console.log(`      🌱 POT ${potNumber} (${soilKey}): ${soilValue}% | Threshold: ${batasBawah}-${batasAtas}%`);
         console.log(`         → Raw value: ${sensorData[soilKey]} | Parsed: ${soilValue} | Check: ${soilValue} < ${batasBawah} = ${soilValue < batasBawah}`);
 
+        // ============ ANTI-SPAM CHECK 3: Firebase Per-Pot Cooldown ============
+        const potCooldown = await checkPotCooldown(potNumber);
+        if (potCooldown.inCooldown) {
+          console.log(`      🚨 POT ${potNumber}: Firebase COOLDOWN active (${potCooldown.remainingSeconds}s remaining) - SKIP`);
+          continue; // Skip this pot
+        }
+
         // NEW: Check if ABOVE upper threshold - skip if too wet!
         if (soilValue >= batasAtas) {
           console.log(`      ✅ POT ${potNumber}: SKIP (${soilValue}% >= ${batasAtas}% - sudah basah!)`);
@@ -1204,6 +1228,11 @@ async function checkSensorThresholds() {
         potDetails.forEach(p => console.log(`   - POT ${p.pot}: ${p.value}% < ${batasBawah}%`));
         console.log(`   Mode: ${smartMode ? 'Smart (monitor until ' + batasAtas + '%)' : 'Fixed (' + durasi + 's)'}`);
         console.log(`   Pumps: Air=${pompaAir}, Pupuk=${pompaPupuk}`);
+
+        // Set Firebase cooldowns BEFORE creating job
+        await setThresholdCooldown(thresholdKey, 2); // 2 minutes
+        await Promise.all(potsNeedWatering.map(pot => setPotCooldown(pot, 2))); // 2 minutes each
+        console.log(`   🔒 Firebase cooldowns SET for threshold + pots`);
 
         await sendAutomationNotification({
           title: 'ApsGo - Penyiraman Otomatis',
@@ -1252,6 +1281,94 @@ async function checkSensorThresholds() {
     }
   } catch (error) {
     console.error('❌ Error in sensor threshold check:', error.message);
+  }
+}
+
+// ============ ANTI-SPAM: Check if threshold is in cooldown ============
+async function checkThresholdCooldown(thresholdId) {
+  try {
+    const cooldownData = await readFirebaseSmart(`sensor_cooldowns/${thresholdId}`);
+    
+    if (!cooldownData || !cooldownData.lastTrigger) {
+      return { inCooldown: false };
+    }
+
+    const lastTriggerMs = cooldownData.lastTrigger;
+    const cooldownMinutes = cooldownData.cooldownMinutes || 2;
+    const cooldownMs = cooldownMinutes * 60 * 1000;
+    const elapsedMs = Date.now() - lastTriggerMs;
+
+    if (elapsedMs < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - elapsedMs) / 1000);
+      return {
+        inCooldown: true,
+        remainingSeconds: remainingSeconds,
+        elapsedSeconds: Math.floor(elapsedMs / 1000),
+      };
+    }
+
+    return { inCooldown: false };
+  } catch (error) {
+    console.log('⚠️  Error checking threshold cooldown:', error.message);
+    return { inCooldown: false };
+  }
+}
+
+// ============ ANTI-SPAM: Check if pot is in cooldown ============
+async function checkPotCooldown(potNumber) {
+  try {
+    const cooldownData = await readFirebaseSmart(`pot_cooldowns/pot_${potNumber}`);
+    
+    if (!cooldownData || !cooldownData.lastTrigger) {
+      return { inCooldown: false };
+    }
+
+    const lastTriggerMs = cooldownData.lastTrigger;
+    const cooldownMinutes = cooldownData.cooldownMinutes || 2;
+    const cooldownMs = cooldownMinutes * 60 * 1000;
+    const elapsedMs = Date.now() - lastTriggerMs;
+
+    if (elapsedMs < cooldownMs) {
+      const remainingSeconds = Math.ceil((cooldownMs - elapsedMs) / 1000);
+      return {
+        inCooldown: true,
+        remainingSeconds: remainingSeconds,
+      };
+    }
+
+    return { inCooldown: false };
+  } catch (error) {
+    console.log('⚠️  Error checking pot cooldown:', error.message);
+    return { inCooldown: false };
+  }
+}
+
+// ============ ANTI-SPAM: Set threshold cooldown in Firebase ============
+async function setThresholdCooldown(thresholdId, cooldownMinutes = 2) {
+  try {
+    const now = Date.now();
+    await updateFirebaseSmart(`sensor_cooldowns/${thresholdId}`, {
+      lastTrigger: now,
+      cooldownMinutes: cooldownMinutes,
+      lastUpdatedAt: new Date().toISOString(),
+    });
+    console.log(`      🔒 Threshold cooldown SET: ${thresholdId} (${cooldownMinutes} min)`);
+  } catch (error) {
+    console.log('⚠️  Error setting threshold cooldown:', error.message);
+  }
+}
+
+// ============ ANTI-SPAM: Set pot cooldown in Firebase ============
+async function setPotCooldown(potNumber, cooldownMinutes = 2) {
+  try {
+    const now = Date.now();
+    await updateFirebaseSmart(`pot_cooldowns/pot_${potNumber}`, {
+      lastTrigger: now,
+      cooldownMinutes: cooldownMinutes,
+      lastUpdatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.log('⚠️  Error setting pot cooldown:', error.message);
   }
 }
 
