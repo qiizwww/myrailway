@@ -1,148 +1,151 @@
 # ApsGo Railway Worker
 
-Background worker service untuk sistem otomasi IoT ApsGo. Service ini berjalan 24/7 di cloud untuk menjalankan penjadwalan dan automation bahkan ketika aplikasi mobile ditutup atau handphone pengguna mati.
+**Background automation service untuk ApsGo IoT System**
 
-## Features
+Menjalankan scheduled watering (Waktu Mode) dan sensor-based watering (Sensor Mode) 24/7 di Railway.
 
-- ✅ **Waktu Mode**: Penjadwalan berdasarkan waktu (cron-based)
-- ✅ **Sensor Mode**: Otomasi berdasarkan threshold kelembapan tanah
-- ✅ **Auto History Logging**: Record data sensor setiap 30 menit
-- ✅ **Redis Queue**: Prevent race conditions dan manage concurrent tasks
-- ✅ **Graceful Shutdown**: Clean shutdown dengan safety turn-off semua aktuator
-- ✅ **Health Monitoring**: Auto health check setiap 5 menit
-- ✅ **Auto Cleanup**: Hapus history lama otomatis (retain 10 hari)
+## 📋 Isi Folder
 
-## Tech Stack
+```
+railway-worker/
+├── worker.js                    # Main worker service (ACTIVE)
+├── worker_remote.js            # Alternative worker version (backup)
+├── package.json                # Dependencies
+├── .env                        # Configuration (sensitive data)
+├── .env.example                # Example configuration
+├── debug.js                    # Debug & troubleshooting script
+├── test-firebase-*.js          # Firebase connection tests
+├── check-queue.js              # Redis queue status checker
+├── .git/                       # Separate git repo untuk railway deployment
+└── node_modules/               # Dependencies (npm install)
+```
 
-- **Node.js**: Runtime environment
-- **Firebase Admin SDK**: Realtime Database integration
-- **BullMQ**: Robust job queue dengan Redis
-- **Redis**: In-memory database untuk queue dan caching
-- **Cron**: Scheduled tasks
+## 🚀 Quickstart
 
-## Setup Local Development
-
-1. Install dependencies:
+### 1. Setup Environment
 ```bash
+cd railway-worker
 npm install
-```
-
-2. Copy `.env.example` ke `.env` dan isi dengan credentials Firebase Anda:
-```bash
 cp .env.example .env
+# Edit .env dengan credentials Firebase Anda
 ```
 
-3. Setup Redis lokal (gunakan Docker):
+### 2. Run Worker
 ```bash
-docker run -d -p 6379:6379 redis:latest
+# Production
+npm start
+
+# Development (dengan auto-reload)
+npm run dev
+
+# Debug mode
+npm run debug
 ```
 
-4. Run worker:
+### 3. Test Connection
 ```bash
-npm run dev  # Development mode dengan nodemon
-# atau
-npm start    # Production mode
+npm run test:firebase
+node check-queue.js            # Check Redis queue status
 ```
 
-## Deploy to Railway
+## ⚙️ Configuration
 
-Lihat file `DEPLOYMENT_GUIDE.md` untuk step-by-step deployment ke Railway.
+File `.env` harus berisi:
 
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `FIREBASE_PROJECT_ID` | Firebase project ID | ✅ |
-| `FIREBASE_CLIENT_EMAIL` | Firebase service account email | ✅ |
-| `FIREBASE_PRIVATE_KEY` | Firebase service account private key | ✅ |
-| `FIREBASE_DATABASE_URL` | Firebase Realtime Database URL | ✅ |
-| `REDIS_HOST` | Redis hostname | ✅ |
-| `REDIS_PORT` | Redis port (default: 6379) | ❌ |
-| `REDIS_PASSWORD` | Redis password (if required) | ❌ |
-
-## Architecture
-
-```
-Flutter App (Mobile)
-        ↕
-Firebase Realtime DB ← ESP32/Hardware
-        ↕
-Railway Worker (This service)
-        ↕
-   Redis Queue
+```env
+FIREBASE_PROJECT_ID=your-project
+FIREBASE_CLIENT_EMAIL=your-email@firebase...
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_DATABASE_URL=https://your-db.firebaseio.com
+REDIS_URL=redis://localhost:6379
+NODE_ENV=production
 ```
 
-## How It Works
+## 📝 Features
 
-### Waktu Mode
-- Worker check Firebase `/kontrol` setiap 30 detik
-- Jika `waktu_1` atau `waktu_2` match dengan waktu sekarang, add job ke queue
-- Job akan diprocess oleh worker untuk nyalakan pompa dan valve
-- Setelah durasi selesai, otomatis matikan
+### Waktu Mode (Schedule-based)
+- Jalankan penyiraman sesuai jadwal (Jadwal 1, Jadwal 2)
+- Check setiap 30 detik, eksekusi jika waktu cocok
+- Support multiple durations per schedule
 
-### Sensor Mode
-- Worker listen ke Firebase `/data` secara realtime
-- Jika `soil_X` < `batas_bawah`, trigger watering untuk pot tersebut
-- Ada cooldown 2 menit per pot untuk prevent over-watering
-- Support 2 mode: `fixed` (durasi tetap) dan `smart` (sampai mencapai batas_atas)
+### Sensor Mode (Threshold-based)  
+- Monitor kelembapan tanah real-time
+- Trigger penyiraman otomatis saat mencapai threshold
+- Cooldown 2 menit antar penyiraman per pot (prevent flooding)
+- Skip jika Flutter app sudah handle sensor mode
 
-### Safety Features
-- Concurrency: 1 (hanya 1 job diprocess pada satu waktu)
-- Debouncing: Minimum 2 menit antar penyiraman per pot
-- Error handling: Jika error, otomatis turn OFF semua aktuator
-- Graceful shutdown: Clean up resources saat restart/shutdown
+### Background Queue
+- Menggunakan **BullMQ** + Redis untuk queue management
+- Prevent race conditions concurrent tasks
+- Retry mechanism untuk failed jobs
 
-## Monitoring
+## 🔧 Deployment to Railway
 
-Worker akan log semua aktivitas ke console:
-- ✅ Success operations
-- ❌ Errors dengan details
-- 💧 Watering jobs progress
-- 📊 History logging
-- 💚 Health check status
-
-Di Railway dashboard, Anda bisa:
-- View logs realtime
-- Monitor CPU/Memory usage
-- Setup alerts untuk failures
-
-## Maintenance
-
-### Manual Queue Management
-
-Untuk clear queue (jika ada masalah):
-```javascript
-const { Queue } = require('bullmq');
-const Redis = require('ioredis');
-
-const redis = new Redis(process.env.REDIS_URL);
-const queue = new Queue('watering', { connection: redis });
-
-// Clear all jobs
-await queue.obliterate();
+### Option 1: Automated (Recommended)
+Railway.json sudah configured, cukup:
+```bash
+cd railway-worker
+git push railway main
 ```
 
-### Database Cleanup
+### Option 2: Manual
+1. Create Railway project
+2. Connect git repository ini (atau fork)
+3. Set environment variables di Railway dashboard
+4. Redeploy saat ada update
 
-History otomatis di-cleanup setiap hari jam 2 pagi, hanya retain 10 hari terakhir.
+## 📊 Monitoring
 
-## Troubleshooting
+### View Logs
+```bash
+railway logs
+```
 
-### Worker tidak berjalan
-1. Check environment variables
-2. Check Firebase credentials
-3. Check Redis connection
+### Check Queue Status
+```bash
+node check-queue.js
+```
 
-### Job tidak diprocess
-1. Check queue status di logs
-2. Verify Firebase rules mengizinkan admin access
-3. Check concurrency setting
+### Debug Connection
+```bash
+node debug.js
+```
 
-### Memory leak
-- Worker menggunakan BullMQ yang sudah optimize untuk long-running process
-- Auto cleanup completed jobs (retain last 100)
-- Auto cleanup failed jobs (retain last 50)
+## 🐛 Troubleshooting
 
-## License
+| Problem | Solution |
+|---------|----------|
+| **Worker tidak jalan** | Check `.env` credentials, test dengan `npm run test:firebase` |
+| **Queue stuck** | Restart worker, check Redis connection |
+| **Duplicate watering** | Check cooldown settings di `automation_constants.dart` |
+| **Missing tasks** | Verify `kontrol_1` path di Firebase structure |
 
-MIT
+## 📌 Important Notes
+
+- **Hanya gunakan `kontrol_1`** - semua jadwal & threshold di sini
+- **Cooldown 2 menit** - hardcoded untuk semua pot (prevent over-watering)
+- **Tidak perlu `pot_cooldowns` / `sensor_cooldowns` di database** - gunakan default
+- **Worker hanya handle Waktu Mode** jika Flutter app tidak active
+
+## 🔄 Git Workflow
+
+```bash
+# Ini adalah SEPARATE git repo dari main project
+cd railway-worker
+git add .
+git commit -m "fix: update worker configuration"
+git push origin main     # Push ke myrailway repository
+```
+
+## 📞 Support
+
+Jika ada masalah:
+1. Check `.env` configuration
+2. Run `npm run test:firebase` untuk verify Firebase connection
+3. Check logs dengan `npm run debug`
+4. Review worker.js log output
+
+---
+
+**Last Updated**: April 12, 2026
+**Status**: ✅ Production Ready
